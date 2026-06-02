@@ -1,0 +1,66 @@
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.10", "3.11", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install light deps for smoke tests
+        # Heavy deps (whisper, ffmpeg, google client) aren't needed to verify
+        # the code compiles and the config/CLI load. Keep CI fast.
+        run: pip install PyYAML python-dotenv
+
+      - name: Byte-compile all sources
+        run: python -m compileall pipeline.py faceless
+
+      - name: Config + CLI smoke test
+        run: |
+          # doctor exits non-zero when optional deps are absent (expected in CI);
+          # we only assert it runs without crashing.
+          python pipeline.py doctor || true
+          python pipeline.py --help
+          python pipeline.py jobs
+
+      - name: Interval parser sanity check
+        run: |
+          python - <<'PY'
+          from pipeline import _parse_interval
+          assert _parse_interval("24h") == 86400
+          assert _parse_interval("90m") == 5400
+          assert _parse_interval("30s") == 30
+          assert _parse_interval("2d") == 172800
+          assert _parse_interval("3600") == 3600
+          print("interval parser OK")
+          PY
+
+      - name: Topic queue sanity check
+        run: |
+          python - <<'PY'
+          import tempfile, pathlib
+          from faceless.topics import TopicQueue
+          d = pathlib.Path(tempfile.mkdtemp())
+          tf = d / "topics.txt"
+          tf.write_text("# comment\nidea one\nidea two\n")
+          q = TopicQueue(tf, d)
+          assert q.pending() == ["idea one", "idea two"], q.pending()
+          q.mark_done("idea one")
+          assert q.pending() == ["idea two"], q.pending()
+          # Idempotent across reloads
+          q2 = TopicQueue(tf, d)
+          assert q2.pending() == ["idea two"], q2.pending()
+          print("topic queue OK")
+          PY

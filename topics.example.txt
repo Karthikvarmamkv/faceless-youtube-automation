@@ -1,0 +1,13 @@
+# Topic queue for `batch` and `schedule`.
+# One topic per line. Lines starting with # are ignored.
+# Copy this to topics.txt and edit. Produced topics are tracked in
+# data/topics_state.json so they won't be redone.
+
+why discipline beats motivation
+3 stoic habits that change your life
+the 2-minute rule for beating procrastination
+how to stay calm under pressure
+why doing less gets you more
+the morning routine that actually works
+how to think clearly when everything feels chaotic
+the power of saying no
