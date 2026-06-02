@@ -74,11 +74,40 @@ python pipeline.py upload --latest
 
 Full setup walkthrough: [`docs/SETUP.md`](docs/SETUP.md).
 
+## Batch & scheduling
+
+Drive production from a **topics file** (one idea per line). Already-produced
+topics are tracked in `data/topics_state.json`, so reruns never repeat work.
+
+```bash
+cp topics.example.txt topics.txt        # add your ideas
+
+# Produce up to 3 Shorts from the queue
+python pipeline.py batch --limit 3 --format short
+
+# Run it on a schedule: 1 video/day (foreground loop)
+python pipeline.py schedule --per-run 1 --interval 24h
+
+# One tick and exit — ideal for cron / Task Scheduler / a GitHub Action
+python pipeline.py schedule --per-run 1 --once
+```
+
+Example cron entry (daily at 9am, one Short, auto-upload as a private draft):
+
+```cron
+0 9 * * *  cd /path/to/faceless-youtube-automation && \
+  .venv/bin/python pipeline.py schedule --per-run 1 --once --upload
+```
+
+Generated videos use a **multi-clip montage** background by default (several
+stock clips stitched together); tune it under `generate:` in `config.yaml`
+(`montage`, `montage_clips`, `segment_sec`).
+
 ## Project layout
 
 | Path | Purpose |
 |------|---------|
-| `pipeline.py` | CLI entry point (`doctor`, `generate`, `clip`, `upload`, `jobs`) |
+| `pipeline.py` | CLI entry point (`doctor`, `generate`, `clip`, `batch`, `schedule`, `upload`, `jobs`) |
 | `faceless/config.py` | Config + secrets loading |
 | `faceless/llm.py` | Claude client — scripts, highlight detection, **and** SEO metadata, with prompt caching |
 | `faceless/sources.py` | Source ingest, rights gate, stock-footage fetch |
@@ -86,7 +115,9 @@ Full setup walkthrough: [`docs/SETUP.md`](docs/SETUP.md).
 | `faceless/clipper.py` | ffmpeg cutting, 9:16 reframing |
 | `faceless/tts.py` | Voiceover generation (edge-tts) |
 | `faceless/captions.py` | Subtitle generation + burn-in |
+| `faceless/montage.py` | Stitch multiple stock clips into a background montage |
 | `faceless/generate.py` | From-scratch video assembly |
+| `faceless/topics.py` | Topic queue for batch/scheduled runs |
 | `faceless/youtube.py` | YouTube Data API upload (private/unlisted) |
 | `faceless/jobs.py` | Job state tracking |
 

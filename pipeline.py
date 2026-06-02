@@ -75,46 +75,113 @@ def cmd_doctor(args) -> int:
 # generate
 # --------------------------------------------------------------------------
 
-def cmd_generate(args) -> int:
+def _produce_generated(topic: str, video_format: str, config: Config,
+                       store: JobStore, llm) -> Job:
+    """Generate one video from a topic and return its saved Job."""
     from faceless.generate import generate_video
-    from faceless.llm import LLM
 
-    config = Config.load(args.config)
-    store = JobStore(config.workdir)
-    llm = LLM(config)
-
-    log(f"Writing {args.format} script on: {args.topic}", level="step")
-    script = llm.write_script(args.topic, video_format=args.format)
+    log(f"Writing {video_format} script on: {topic}", level="step")
+    script = llm.write_script(topic, video_format=video_format)
     log(f"Title idea: {script.title_idea}", level="ok")
 
-    video_path = generate_video(script, config=config, video_format=args.format)
+    video_path = generate_video(script, config=config, video_format=video_format)
 
     log("Generating metadata...", level="step")
     meta = llm.write_metadata(
-        video_format=args.format,
-        topic_or_transcript=args.topic,
+        video_format=video_format,
+        topic_or_transcript=topic,
         script_excerpt=script.script[:1500],
     )
 
     job = Job(
         id=store.new_id("generate"),
         mode="generate",
-        video_format=args.format,
+        video_format=video_format,
         video_path=str(video_path),
         title=meta.title,
         description=meta.description,
         tags=meta.tags,
-        topic=args.topic,
+        topic=topic,
         extra={"hashtags": meta.hashtags, "title_idea": script.title_idea},
     )
     store.save(job)
     log(f"Saved job {job.id}", level="ok")
+    return job
+
+
+def cmd_generate(args) -> int:
+    from faceless.llm import LLM
+
+    config = Config.load(args.config)
+    store = JobStore(config.workdir)
+    llm = LLM(config)
+
+    job = _produce_generated(args.topic, args.format, config, store, llm)
     _print_job_summary(job)
 
     if args.upload:
         return _do_upload(job, config, store)
     log("Review the render, then: python pipeline.py upload --latest", level="info")
     return 0
+
+
+def cmd_batch(args) -> int:
+    from faceless.llm import LLM
+    from faceless.topics import TopicQueue
+
+    config = Config.load(args.config)
+    store = JobStore(config.workdir)
+    topics_file = args.topics or "topics.txt"
+    queue = TopicQueue(topics_file, config.workdir)
+
+    pending = queue.pending(limit=args.limit)
+    if not pending:
+        log("No pending topics. Add some to your topics file.", level="info")
+        return 0
+
+    log(f"Producing {len(pending)} video(s) from {topics_file}", level="step")
+    llm = LLM(config)
+    produced = 0
+    for topic in pending:
+        try:
+            job = _produce_generated(topic, args.format, config, store, llm)
+            queue.mark_done(topic)
+            produced += 1
+            if args.upload:
+                _do_upload(job, config, store)
+        except Exception as e:
+            log(f"Failed on '{topic}': {e}", level="error")
+            if args.stop_on_error:
+                return 1
+    log(f"Batch complete: {produced} produced, {queue.remaining_count()} topics left.",
+        level="ok")
+    return 0
+
+
+def cmd_schedule(args) -> int:
+    import time
+
+    config = Config.load(args.config)
+    interval = _parse_interval(args.interval)
+
+    def tick() -> None:
+        # Reuse the batch command with a per-run limit.
+        targs = argparse.Namespace(
+            config=args.config, topics=args.topics, limit=args.per_run,
+            format=args.format, upload=args.upload, stop_on_error=False,
+        )
+        cmd_batch(targs)
+
+    if args.once:
+        tick()
+        return 0
+
+    log(f"Scheduler started: {args.per_run} video(s) every {args.interval}. "
+        "Ctrl-C to stop.", level="step")
+    while True:
+        tick()
+        log(f"Sleeping {args.interval} until next run...", level="info")
+        time.sleep(interval)
 
 
 # --------------------------------------------------------------------------
@@ -270,6 +337,15 @@ def cmd_jobs(args) -> int:
 
 # --------------------------------------------------------------------------
 
+def _parse_interval(text: str) -> int:
+    """Parse '24h', '90m', '3600s', or a bare number (seconds) to seconds."""
+    text = str(text).strip().lower()
+    units = {"s": 1, "m": 60, "h": 3600, "d": 86400}
+    if text and text[-1] in units:
+        return int(float(text[:-1]) * units[text[-1]])
+    return int(float(text))
+
+
 def _print_job_summary(job: Job) -> None:
     print("\n" + "=" * 60)
     print(f"  {job.title}")
@@ -297,6 +373,25 @@ def build_parser() -> argparse.ArgumentParser:
     g.add_argument("--format", choices=["short", "long"], default="short")
     g.add_argument("--upload", action="store_true", help="Upload after rendering")
     g.set_defaults(func=cmd_generate)
+
+    b = sub.add_parser("batch", help="Produce videos from a topics file")
+    b.add_argument("--topics", help="Topics file (default: topics.txt)")
+    b.add_argument("--format", choices=["short", "long"], default="short")
+    b.add_argument("--limit", type=int, help="Max videos to produce this run")
+    b.add_argument("--upload", action="store_true", help="Upload each after rendering")
+    b.add_argument("--stop-on-error", action="store_true",
+                   help="Abort the batch on the first failure")
+    b.set_defaults(func=cmd_batch)
+
+    s = sub.add_parser("schedule", help="Run batch on a recurring interval")
+    s.add_argument("--topics", help="Topics file (default: topics.txt)")
+    s.add_argument("--format", choices=["short", "long"], default="short")
+    s.add_argument("--per-run", type=int, default=1, help="Videos per tick")
+    s.add_argument("--interval", default="24h", help="e.g. 24h, 6h, 90m, 3600s")
+    s.add_argument("--upload", action="store_true", help="Upload each after rendering")
+    s.add_argument("--once", action="store_true",
+                   help="Run a single tick and exit (for cron)")
+    s.set_defaults(func=cmd_schedule)
 
     c = sub.add_parser("clip", help="Cut Shorts from a long source video")
     c.add_argument("--input", help="Local source video file")

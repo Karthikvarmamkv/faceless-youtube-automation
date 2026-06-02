@@ -52,6 +52,10 @@ generate:
   footage_source: "pexels"   # pexels | pixabay | color
   # Fallback solid background if no footage / no API key.
   fallback_color: "#101418"
+  # Stitch several stock clips into a background montage (vs. one looped clip).
+  montage: true
+  montage_clips: 6           # max clips to fetch/stitch
+  segment_sec: 5             # seconds shown per clip in the montage
 
 upload:
   privacy: "private"      # private | unlisted | public  (KEEP private/unlisted!)

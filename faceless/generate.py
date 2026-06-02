@@ -14,6 +14,7 @@ from pathlib import Path
 from .captions import build_srt, subtitles_filter
 from .config import Config
 from .llm import ScriptResult
+from .montage import build_background
 from .sources import fetch_stock_clips
 from .tts import synthesize
 from .utils import ffprobe_duration, log, require_ffmpeg, run, slugify, timestamp_slug
@@ -46,21 +47,26 @@ def generate_video(
         subs = subtitles_filter(srt, config, video_format)
 
     # 3. Background ------------------------------------------------------
+    # Fetch enough clips to cover the audio as a montage (one clip per
+    # segment_sec), capped by generate.montage_clips.
     orientation = "portrait" if video_format == "short" else "landscape"
+    seg_dur = float(config.get("generate.segment_sec", 5))
+    montage_on = config.get("generate.montage", True)
+    max_clips = int(config.get("generate.montage_clips", 6)) if montage_on else 1
+    wanted = max(1, min(max_clips, int(duration // seg_dur) + 1))
+    keywords = script.on_screen_keywords or [script.title_idea]
     clips = fetch_stock_clips(
-        script.on_screen_keywords or [script.title_idea],
-        config=config,
-        count=1,
-        orientation=orientation,
+        keywords, config=config, count=wanted, orientation=orientation,
     )
 
     out_dir = workdir / "renders"
     out_dir.mkdir(parents=True, exist_ok=True)
     out_path = out_dir / f"{stem}.mp4"
 
-    if clips:
-        bg = clips[0]
-        log(f"Compositing over footage: {bg.name}", level="step")
+    bg = build_background(clips, config=config, video_format=video_format, stem=stem)
+
+    if bg:
+        log(f"Compositing over background: {bg.name}", level="step")
         video_chain = (
             f"[0:v]scale={w}:{h}:force_original_aspect_ratio=increase,"
             f"crop={w}:{h},setsar=1"
