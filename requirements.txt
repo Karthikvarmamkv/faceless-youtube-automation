@@ -1,0 +1,24 @@
+# --- Core ---
+anthropic>=0.69.0          # Claude API: scripts, highlights, metadata
+PyYAML>=6.0                # config.yaml
+python-dotenv>=1.0.0       # .env secrets loading
+
+# --- Source ingest / footage ---
+yt-dlp>=2024.1.0           # download videos you own / CC sources
+requests>=2.31.0           # stock footage APIs (Pexels/Pixabay)
+
+# --- Transcription (clip mode) ---
+faster-whisper>=1.0.0      # local Whisper; CPU works, GPU faster
+
+# --- Voiceover (generate mode) ---
+edge-tts>=6.1.0            # free Microsoft neural TTS
+
+# --- YouTube upload ---
+google-api-python-client>=2.100.0
+google-auth-oauthlib>=1.1.0
+google-auth-httplib2>=0.1.1
+
+# NOTE: ffmpeg is a SYSTEM dependency, not a pip package. Install separately:
+#   macOS:   brew install ffmpeg
+#   Ubuntu:  sudo apt install ffmpeg
+#   Windows: https://www.gyan.dev/ffmpeg/builds/

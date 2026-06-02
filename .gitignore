@@ -1,0 +1,29 @@
+# Secrets
+.env
+config.yaml
+client_secret.json
+token.json
+*.credentials
+
+# Work data (renders, downloads, transcripts, job state)
+data/
+*.mp4
+*.mov
+*.mkv
+*.webm
+*.mp3
+*.wav
+*.srt
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.env.local
+*.egg-info/
+.pytest_cache/
+
+# OS
+.DS_Store
+Thumbs.db

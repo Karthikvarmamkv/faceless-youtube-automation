@@ -1,0 +1,64 @@
+# Copy to config.yaml and tweak. config.yaml is gitignored.
+
+channel:
+  # Used to steer Claude's scripting + metadata voice.
+  niche: "stoicism, self-improvement, and practical philosophy"
+  tone: "calm, direct, motivational — no hype, no clickbait lies"
+  target_audience: "men and women 18-35 interested in personal growth"
+  language: "en"
+
+# Where all work artifacts go (downloads, transcripts, renders, job state).
+workdir: "data"
+
+llm:
+  model: "claude-opus-4-8"
+  effort: "high"          # low | medium | high | xhigh | max
+
+video:
+  short:
+    width: 1080
+    height: 1920          # 9:16
+    max_duration_sec: 59  # YouTube Shorts cutoff
+    fps: 30
+  long:
+    width: 1920
+    height: 1080          # 16:9
+    fps: 30
+
+captions:
+  enabled: true
+  font: "Arial"           # any font ffmpeg/libass can find; see docs/SETUP.md
+  font_size: 18           # relative; auto-scaled per format
+  primary_color: "&H00FFFFFF"   # white (libass BGR hex)
+  outline_color: "&H00000000"   # black outline
+  position: "center"      # center | bottom
+
+voiceover:
+  # edge-tts voice. List voices: `edge-tts --list-voices`
+  voice: "en-US-AndrewNeural"
+  rate: "+0%"             # e.g. "+10%" to speed up
+  volume: "+0%"
+
+clip:
+  # How many Shorts to try to cut from one long source.
+  max_clips: 5
+  min_clip_sec: 20
+  max_clip_sec: 59
+  # Reframe strategy for vertical: "center_crop" (simple) or "blurred_padding"
+  reframe: "blurred_padding"
+
+generate:
+  # Background footage source for from-scratch videos.
+  footage_source: "pexels"   # pexels | pixabay | color
+  # Fallback solid background if no footage / no API key.
+  fallback_color: "#101418"
+
+upload:
+  privacy: "private"      # private | unlisted | public  (KEEP private/unlisted!)
+  category_id: "22"       # 22 = People & Blogs; 27 = Education; 24 = Entertainment
+  made_for_kids: false
+  # Appended to every description.
+  default_footer: |
+
+    ---
+    Generated with an automated faceless pipeline. Reviewed before publishing.
