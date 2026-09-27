@@ -8,6 +8,7 @@ identically for generated and clipped videos.
 from __future__ import annotations
 
 import asyncio
+import os
 from pathlib import Path
 from typing import Any
 
@@ -42,7 +43,23 @@ def synthesize(text: str, out_path: Path, *, config: Config) -> tuple[Path, list
 async def _run(text, out_path, voice, rate, volume) -> list[dict[str, Any]]:
     import edge_tts
 
-    communicate = edge_tts.Communicate(text, voice, rate=rate, volume=volume)
+    # edge-tts uses aiohttp, which ignores the usual proxy / CA environment
+    # variables. Honour them so TTS works behind corporate proxies.
+    extra: dict[str, Any] = {}
+    proxy = os.environ.get("HTTPS_PROXY") or os.environ.get("https_proxy")
+    if proxy:
+        extra["proxy"] = proxy
+    cafile = os.environ.get("SSL_CERT_FILE") or os.environ.get("REQUESTS_CA_BUNDLE")
+    if cafile and os.path.exists(cafile):
+        import ssl
+
+        import aiohttp
+
+        extra["connector"] = aiohttp.TCPConnector(ssl=ssl.create_default_context(cafile=cafile))
+
+    # edge-tts 7.x defaults to SentenceBoundary; captions need per-word timing.
+    communicate = edge_tts.Communicate(text, voice, rate=rate, volume=volume,
+                                       boundary="WordBoundary", **extra)
     words: list[dict[str, Any]] = []
     with open(out_path, "wb") as f:
         async for chunk in communicate.stream():

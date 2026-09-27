@@ -71,6 +71,7 @@ def build_srt(
         lines.append("")
         idx += 1
 
+    out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_text("\n".join(lines), encoding="utf-8")
     return out_path
 
