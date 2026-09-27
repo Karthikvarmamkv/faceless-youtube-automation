@@ -11,7 +11,7 @@ requests>=2.31.0           # stock footage APIs (Pexels/Pixabay)
 faster-whisper>=1.0.0      # local Whisper; CPU works, GPU faster
 
 # --- Voiceover (generate mode) ---
-edge-tts>=7.0.0            # free Microsoft neural TTS
+edge-tts>=7.1.0            # free Microsoft neural TTS
 
 # --- YouTube upload ---
 google-api-python-client>=2.100.0
