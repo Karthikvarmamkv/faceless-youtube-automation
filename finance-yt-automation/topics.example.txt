@@ -1,0 +1,13 @@
+# Topic queue for `batch` and `schedule`.
+# One topic per line. Lines starting with # are ignored.
+# Optional prefix "pillar | " tags the topic with a content pillar.
+# Copy this to topics.txt and edit. `python pipeline.py ideas` can append more.
+# Produced topics are tracked in data/topics_state.json so they won't be redone.
+
+index investing and compound growth | what $200 a month becomes in 30 years at 7%
+budgeting and cash-flow habits | the 50/30/20 budget in 45 seconds
+saving and emergency funds | how big should your emergency fund actually be
+debt payoff strategies | avalanche vs snowball: which pays off debt faster
+credit scores and credit cards, explained simply | the 5 things that decide your credit score
+money psychology and common mistakes | why lifestyle creep quietly eats your raises
+how big economic concepts affect your wallet | what a rate hike actually does to your money

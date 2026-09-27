@@ -12,6 +12,11 @@ uploading them to your channel as **private/unlisted drafts for your review**.
 > pipeline forces an explicit per-source **rights confirmation** before it will
 > process anything.
 
+> 💰 **Finance channel project:** a standalone, finance-specific pipeline
+> (accurate animated charts, compliance review, disclaimers, optional
+> Higgsfield AI video with credit budgets) lives in
+> [`finance-yt-automation/`](finance-yt-automation/README.md).
+
 ## What it does
 
 ```

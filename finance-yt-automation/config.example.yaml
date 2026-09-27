@@ -1,0 +1,148 @@
+# Copy to config.yaml and tweak. config.yaml is gitignored.
+
+channel:
+  name: "Money Clear"
+  niche: "personal finance: budgeting, saving, investing basics, debt payoff, and money psychology"
+  tone: "calm, plain-English, numbers-first, no hype, no fear-mongering"
+  target_audience: "adults 22-45 who want to get better with money but find finance content intimidating"
+  language: "en"
+  region: "US"            # steers examples (currency, account types like 401k/ISA)
+  currency_symbol: "$"
+
+# Content pillars used by `ideas` to brainstorm topics. Keep them tight — a
+# channel with a clear identity grows faster than one that covers everything.
+pillars:
+  - "budgeting and cash-flow habits"
+  - "saving and emergency funds"
+  - "index investing and compound growth"
+  - "debt payoff strategies"
+  - "credit scores and credit cards, explained simply"
+  - "money psychology and common mistakes"
+  - "how big economic concepts affect your wallet (inflation, interest rates)"
+
+# Where all work artifacts go (audio, charts, footage, renders, job state).
+workdir: "data"
+
+llm:
+  model: "claude-opus-5"
+  effort: "high"          # low | medium | high | xhigh | max
+  # Run a second Claude pass that fact-checks and compliance-reviews every script.
+  review_scripts: true
+  # Retry refused requests on Anthropic's recommended fallback model.
+  fallbacks: true
+
+compliance:
+  # Refuse to render a script that still contains a critical violation
+  # (guaranteed returns, "risk-free", named-ticker buy/sell calls, ...).
+  block_on_violation: true
+  # Short spoken line appended to every script (keep it short; it's narrated).
+  spoken_disclaimer: "Quick note: this is general education, not financial advice."
+  # Full disclaimer appended to every YouTube description.
+  description_disclaimer: |
+    DISCLAIMER: This video is for general educational and informational purposes
+    only and is not financial, investment, tax, or legal advice. Nothing here is a
+    recommendation to buy or sell any security or product. Past performance does not
+    guarantee future results. Consider speaking with a licensed professional about
+    your own situation.
+  # Mention if you use affiliate links in descriptions (FTC / ASA rules).
+  affiliate_disclosure: ""
+  ai_disclosure: "Narration and visuals in this video were produced with AI tools and reviewed by a human before publishing."
+
+video:
+  short:
+    width: 1080
+    height: 1920          # 9:16
+    max_duration_sec: 59  # YouTube Shorts cutoff
+    fps: 30
+  long:
+    width: 1920
+    height: 1080          # 16:9
+    fps: 30
+
+captions:
+  enabled: true
+  font: "Arial"           # any font ffmpeg/libass can find; see docs/SETUP.md
+  font_size: 18           # relative; auto-scaled per format
+  primary_color: "&H00FFFFFF"   # white (libass BGR hex)
+  highlight_color: "&H0000D7FF" # gold accent (BGR) used for the outline glow
+  outline_color: "&H00000000"   # black outline
+  position: "center"      # center | bottom
+  words_per_caption: 4
+
+voiceover:
+  # edge-tts voice. List voices: `edge-tts --list-voices`
+  voice: "en-US-ChristopherNeural"
+  rate: "+4%"
+  volume: "+0%"
+
+visuals:
+  # Background footage source for narration sections.
+  footage_source: "pexels"   # pexels | pixabay | higgsfield | none
+  # When footage_source is "higgsfield": which preset to use (see higgsfield.models)
+  # and the most AI clips to generate per video (the rest use a gradient).
+  higgsfield_model: "broll_video"
+  higgsfield_max_clips: 3
+  # Keywords appended to every footage search to keep results on-brand.
+  footage_style: "cinematic, clean, modern"
+  # Fallback background when no footage is available.
+  fallback_color: "#0B1220"
+  # Chart appearance (rendered locally with matplotlib).
+  chart_theme:
+    background: "#0B1220"
+    accent: "#F5C542"        # gold
+    secondary: "#4FC3F7"     # sky blue
+    text: "#F2F4F8"
+    grid: "#243047"
+  # How long footage clips are shown before cutting to the next one.
+  segment_sec: 5
+
+upload:
+  privacy: "private"      # private | unlisted | public  (KEEP private/unlisted!)
+  category_id: "27"       # 27 = Education
+  made_for_kids: false
+  # YouTube's "altered or synthetic content" disclosure flag.
+  contains_synthetic_media: true
+
+audio:
+  # Optional royalty-free music track mixed quietly under the voiceover.
+  background_music: ""     # e.g. "assets/music/calm-lofi.mp3"
+  music_volume: 0.08
+
+# ---------------------------------------------------------------------------
+# Higgsfield (optional): AI-generated video/image via any Higgsfield model.
+# Credentials go in .env.local as HF_KEY=key-id:key-secret (never here).
+# ---------------------------------------------------------------------------
+higgsfield:
+  budget:
+    # Refuse any single request estimated above this many credits.
+    max_credits_per_request: 60
+    # Refuse new requests once today's (UTC) estimated spend would exceed this.
+    max_credits_per_day: 300
+    # Refuse models whose price below is unknown, so nothing is spent blind.
+    require_known_cost: true
+
+  # Model presets. `id` is the API model id shown on the model's API page in the
+  # Higgsfield console (https://console.higgsfield.ai/models). Add as many as
+  # you like and refer to them by name. Prices change: copy the current credit
+  # cost from the console into credits_per_second or credits_per_request.
+  models:
+    seedance_t2v:
+      id: "bytedance/seedance-2.5/text-to-video"
+      output: video
+      defaults: {duration: 5, resolution: "720p", aspect_ratio: "16:9"}
+      credits_per_second: null      # fill in from the console before first use
+      notes: "Seedance 2.5 text-to-video. 4-30 s, 480p/720p/1080p, optional native audio."
+    seedream_image:
+      id: "bytedance/seedream/v4/text-to-image"
+      output: image
+      defaults: {resolution: "2K", aspect_ratio: "16:9"}
+      credits_per_request: null     # fill in from the console before first use
+      notes: "Still images, e.g. thumbnail backgrounds."
+    broll_video:
+      # Used when visuals.footage_source is "higgsfield". Point it at whichever
+      # video model gives the best quality-per-credit for B-roll.
+      id: "bytedance/seedance-2.5/text-to-video"
+      output: video
+      defaults: {duration: 5, resolution: "720p", generate_audio: false}
+      credits_per_second: null
+      notes: "Silent 5 s B-roll clips for narration scenes."

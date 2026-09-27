@@ -1,0 +1,25 @@
+# --- Core ---
+anthropic>=0.69.0          # Claude API: scripts, compliance review, metadata, ideas
+pydantic>=2.0              # structured outputs
+PyYAML>=6.0                # config.yaml
+python-dotenv>=1.0.0       # .env secrets loading
+
+# --- Visuals ---
+matplotlib>=3.8            # data charts (compound growth, comparisons) rendered locally
+requests>=2.31.0           # stock footage APIs (Pexels/Pixabay)
+
+# --- Voiceover ---
+edge-tts>=7.0.0            # free Microsoft neural TTS (7.x needed for word timings)
+
+# --- YouTube upload ---
+google-api-python-client>=2.100.0
+google-auth-oauthlib>=1.1.0
+google-auth-httplib2>=0.1.1
+
+# NOTE: ffmpeg is a SYSTEM dependency, not a pip package. Install separately:
+#   macOS:   brew install ffmpeg
+#   Ubuntu:  sudo apt install ffmpeg
+#   Windows: https://www.gyan.dev/ffmpeg/builds/
+
+# --- Optional: Higgsfield AI video/image generation ---
+higgsfield-client>=0.2.0
